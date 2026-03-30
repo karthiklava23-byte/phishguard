@@ -258,7 +258,6 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
   const [selectedType, setSelectedType] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
-  const [aiApiKey, setAiApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
   const [aiExplanation, setAiExplanation] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [reported, setReported] = useState(false);
@@ -286,13 +285,14 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
   };
 
   const handleExplain = async () => {
-    if (!aiApiKey) { alert("Please enter your Gemini API Key on the right to use AI Explain"); return; }
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) { console.error("Gemini API Key missing from environment."); return; }
     setAiLoading(true);
     const systemPrompt = "You are a cybersecurity expert. Give a concise 3-4 sentence plain-English explanation of why this URL is or isn't suspicious. Be specific about red flags. No markdown.";
     const userPrompt = `Analyze this URL: "${result.url}"\nRisk Score: ${result.score}/100 (${result.risk} RISK)\nAttack Type: ${attackTypes[result.attackType].label}\nSignals: ${result.details.map(d => d.text).join(", ")}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${aiApiKey}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -393,10 +393,7 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
                   <div style={{ lineHeight: '1.6', fontSize: 14 }}>{aiExplanation}</div>
                 ) : (
                   <div>
-                    {!import.meta.env.VITE_GEMINI_API_KEY && (
-                      <input style={{ ...STYLES.input, marginBottom: 12 }} type="password" placeholder="Gemini API Key (AIza...)" value={aiApiKey} onChange={e => setAiApiKey(e.target.value)} />
-                    )}
-                    <button style={{ ...STYLES.btnPurple, width: '100%' }} onClick={handleExplain} disabled={aiLoading}>
+                    <button style={{ ...STYLES.btnPurple, width: '100%', marginTop: 8 }} onClick={handleExplain} disabled={aiLoading}>
                       {aiLoading ? "◈ THINKING..." : "⚡ AI EXPLAIN"}
                     </button>
                   </div>
@@ -590,13 +587,13 @@ function Community({ comments, setComments }) {
 function FakeNews({ newsLog, setNewsLog }) {
   const [headline, setHeadline] = useState("");
   const [body, setBody] = useState("");
-  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
   const handleCheck = async () => {
     if (!headline) return;
-    if (!apiKey) { alert("Please enter API Key"); return; }
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) { console.error("Gemini API Key missing"); return; }
     setLoading(true);
     setResult(null);
 
@@ -639,9 +636,6 @@ function FakeNews({ newsLog, setNewsLog }) {
       <h1 style={{ margin: '0 0 24px 0', fontSize: 24 }}>◈ FAKE NEWS DETECTOR</h1>
       {!result ? (
         <div style={STYLES.card}>
-          {!import.meta.env.VITE_GEMINI_API_KEY && (
-            <input style={{ ...STYLES.input, marginBottom: 12 }} type="password" placeholder="Gemini API Key (AIza...)" value={apiKey} onChange={e => setApiKey(e.target.value)} />
-          )}
           <span style={STYLES.sectionLabel}>Article Headline (Required)</span>
           <input style={{ ...STYLES.input, marginBottom: 16 }} placeholder="e.g. Breaking: Government to ban all crypto tomorrow..." value={headline} onChange={e => setHeadline(e.target.value)} />
           <span style={STYLES.sectionLabel}>Article Body (Optional)</span>
