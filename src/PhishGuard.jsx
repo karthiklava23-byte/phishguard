@@ -56,6 +56,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+// GEMINI API CONFIGURATION
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+console.log("◈ PhishGuard Debug: Gemini API Key Loaded:", !!GEMINI_API_KEY);
+if (!GEMINI_API_KEY) {
+  console.warn("⚠ Gemini API Key is missing from your environment. Please ensure VITE_GEMINI_API_KEY exists in .env and restart your dev server (npm run dev).");
+}
+
 // SHARED PERSISTENCE ENGINE (Firebase Realtime Database)
 if (typeof window !== 'undefined' && !window.storage) {
   window.storage = {
@@ -285,14 +292,16 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
   };
 
   const handleExplain = async () => {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) { setAiExplanation("Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment). Feature unavailable."); return; }
+    if (!GEMINI_API_KEY) { 
+      setAiExplanation("Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment). Please restart your development server (npm run dev) if you just added it to .env."); 
+      return; 
+    }
     setAiLoading(true);
     const systemPrompt = "You are a cybersecurity expert. Give a concise 3-4 sentence plain-English explanation of why this URL is or isn't suspicious. Be specific about red flags. No markdown.";
     const userPrompt = `Analyze this URL: "${result.url}"\nRisk Score: ${result.score}/100 (${result.risk} RISK)\nAttack Type: ${attackTypes[result.attackType].label}\nSignals: ${result.details.map(d => d.text).join(", ")}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -592,8 +601,10 @@ function FakeNews({ newsLog, setNewsLog }) {
 
   const handleCheck = async () => {
     if (!headline) return;
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) { setResult({ verdict: "ERROR", summary: "Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment).", confidence: 0, reasons: [], redFlags: [] }); return; }
+    if (!GEMINI_API_KEY) { 
+      setResult({ verdict: "ERROR", summary: "Gemini API Key missing. Please restart your dev server (npm run dev) after adding VITE_GEMINI_API_KEY to .env.", confidence: 0, reasons: [], redFlags: [] }); 
+      return; 
+    }
     setLoading(true);
     setResult(null);
 
@@ -601,7 +612,7 @@ function FakeNews({ newsLog, setNewsLog }) {
     const userPrompt = `Headline: ${headline}\nBody: ${body || "None provided"}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
