@@ -286,20 +286,20 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
 
   const handleExplain = async () => {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) { console.error("Gemini API Key missing from environment."); return; }
+    if (!apiKey) { setAiExplanation("Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment). Feature unavailable."); return; }
     setAiLoading(true);
     const systemPrompt = "You are a cybersecurity expert. Give a concise 3-4 sentence plain-English explanation of why this URL is or isn't suspicious. Be specific about red flags. No markdown.";
     const userPrompt = `Analyze this URL: "${result.url}"\nRisk Score: ${result.score}/100 (${result.risk} RISK)\nAttack Type: ${attackTypes[result.attackType].label}\nSignals: ${result.details.map(d => d.text).join(", ")}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ parts: [{ text: userPrompt }] }]
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }]
         })
       });
       const data = await resp.json();
@@ -311,7 +311,7 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
         setAiExplanation("AI analysis failed: No content returned.");
       }
     } catch (e) {
-      setAiExplanation("Error calling Claude API: " + e.message);
+      setAiExplanation("Error calling Gemini API: " + e.message);
     }
     setAiLoading(false);
   };
@@ -593,7 +593,7 @@ function FakeNews({ newsLog, setNewsLog }) {
   const handleCheck = async () => {
     if (!headline) return;
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) { console.error("Gemini API Key missing"); return; }
+    if (!apiKey) { setResult({ verdict: "ERROR", summary: "Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment).", confidence: 0, reasons: [], redFlags: [] }); return; }
     setLoading(true);
     setResult(null);
 
@@ -601,14 +601,14 @@ function FakeNews({ newsLog, setNewsLog }) {
     const userPrompt = `Headline: ${headline}\nBody: ${body || "None provided"}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ parts: [{ text: userPrompt }] }],
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
           generationConfig: { responseMimeType: "application/json" }
         })
       });
