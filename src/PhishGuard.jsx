@@ -301,7 +301,7 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
     const userPrompt = `Analyze this URL: "${result.url}"\nRisk Score: ${result.score}/100 (${result.risk} RISK)\nAttack Type: ${attackTypes[result.attackType].label}\nSignals: ${result.details.map(d => d.text).join(", ")}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -612,7 +612,7 @@ function FakeNews({ newsLog, setNewsLog }) {
     const userPrompt = `Headline: ${headline}\nBody: ${body || "None provided"}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
