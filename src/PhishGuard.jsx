@@ -597,7 +597,7 @@ function FakeNews({ newsLog, setNewsLog }) {
     setLoading(true);
     setResult(null);
 
-    const systemPrompt = `You are a fact-checking AI. Today is ${new Date().toLocaleDateString()}. Respond ONLY with valid JSON (no markdown):\n{"verdict":"FAKE|REAL|UNCERTAIN","confidence":0-100,"reasons":["r1","r2","r3"],"redFlags":["f1","f2"],"summary":"2-3 sentence plain English analysis"}`;
+    const systemPrompt = `You are a fact-checking AI. Today's date is ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}. Respond ONLY with valid JSON (no markdown):\n{"verdict":"FAKE|REAL|UNCERTAIN","confidence":0-100,"reasons":["r1","r2","r3"],"redFlags":["f1","f2"],"summary":"2-3 sentence plain English analysis"}`;
     const userPrompt = `Headline: ${headline}\nBody: ${body || "None provided"}`;
 
     try {
