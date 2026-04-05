@@ -56,13 +56,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// GEMINI API CONFIGURATION
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-console.log("◈ PhishGuard Debug: Gemini API Key Loaded:", !!GEMINI_API_KEY);
-if (!GEMINI_API_KEY) {
-  console.warn("⚠ Gemini API Key is missing from your environment. Please ensure VITE_GEMINI_API_KEY exists in .env and restart your dev server (npm run dev).");
-}
-
 // SHARED PERSISTENCE ENGINE (Firebase Realtime Database)
 if (typeof window !== 'undefined' && !window.storage) {
   window.storage = {
@@ -265,6 +258,7 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
   const [selectedType, setSelectedType] = useState(null);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
+  const [aiApiKey, setAiApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
   const [aiExplanation, setAiExplanation] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [reported, setReported] = useState(false);
@@ -292,23 +286,20 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
   };
 
   const handleExplain = async () => {
-    if (!GEMINI_API_KEY) { 
-      setAiExplanation("Gemini API Key missing (VITE_GEMINI_API_KEY not found in environment). Please restart your development server (npm run dev) if you just added it to .env."); 
-      return; 
-    }
+    if (!aiApiKey) { alert("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your .env file and restart the server."); return; }
     setAiLoading(true);
     const systemPrompt = "You are a cybersecurity expert. Give a concise 3-4 sentence plain-English explanation of why this URL is or isn't suspicious. Be specific about red flags. No markdown.";
     const userPrompt = `Analyze this URL: "${result.url}"\nRisk Score: ${result.score}/100 (${result.risk} RISK)\nAttack Type: ${attackTypes[result.attackType].label}\nSignals: ${result.details.map(d => d.text).join(", ")}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${aiApiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }]
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userPrompt }] }]
         })
       });
       const data = await resp.json();
@@ -402,7 +393,7 @@ function Scanner({ blacklist, setBlacklist, scanLog, setScanLog }) {
                   <div style={{ lineHeight: '1.6', fontSize: 14 }}>{aiExplanation}</div>
                 ) : (
                   <div>
-                    <button style={{ ...STYLES.btnPurple, width: '100%', marginTop: 8 }} onClick={handleExplain} disabled={aiLoading}>
+                    <button style={{ ...STYLES.btnPurple, width: '100%' }} onClick={handleExplain} disabled={aiLoading}>
                       {aiLoading ? "◈ THINKING..." : "⚡ AI EXPLAIN"}
                     </button>
                   </div>
@@ -596,30 +587,28 @@ function Community({ comments, setComments }) {
 function FakeNews({ newsLog, setNewsLog }) {
   const [headline, setHeadline] = useState("");
   const [body, setBody] = useState("");
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || "");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
   const handleCheck = async () => {
     if (!headline) return;
-    if (!GEMINI_API_KEY) { 
-      setResult({ verdict: "ERROR", summary: "Gemini API Key missing. Please restart your dev server (npm run dev) after adding VITE_GEMINI_API_KEY to .env.", confidence: 0, reasons: [], redFlags: [] }); 
-      return; 
-    }
+    if (!apiKey) { alert("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your .env file and restart the server."); return; }
     setLoading(true);
     setResult(null);
 
-    const systemPrompt = "You are a fact-checking AI. Respond ONLY with valid JSON (no markdown):\n{\"verdict\":\"FAKE|REAL|UNCERTAIN\",\"confidence\":0-100,\"reasons\":[\"r1\",\"r2\",\"r3\"],\"redFlags\":[\"f1\",\"f2\"],\"summary\":\"2-3 sentence plain English analysis\"}";
+    const systemPrompt = `You are a fact-checking AI. Today is ${new Date().toLocaleDateString()}. Respond ONLY with valid JSON (no markdown):\n{"verdict":"FAKE|REAL|UNCERTAIN","confidence":0-100,"reasons":["r1","r2","r3"],"redFlags":["f1","f2"],"summary":"2-3 sentence plain English analysis"}`;
     const userPrompt = `Headline: ${headline}\nBody: ${body || "None provided"}`;
 
     try {
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ parts: [{ text: userPrompt }] }],
           generationConfig: { responseMimeType: "application/json" }
         })
       });
@@ -647,6 +636,7 @@ function FakeNews({ newsLog, setNewsLog }) {
       <h1 style={{ margin: '0 0 24px 0', fontSize: 24 }}>◈ FAKE NEWS DETECTOR</h1>
       {!result ? (
         <div style={STYLES.card}>
+
           <span style={STYLES.sectionLabel}>Article Headline (Required)</span>
           <input style={{ ...STYLES.input, marginBottom: 16 }} placeholder="e.g. Breaking: Government to ban all crypto tomorrow..." value={headline} onChange={e => setHeadline(e.target.value)} />
           <span style={STYLES.sectionLabel}>Article Body (Optional)</span>
